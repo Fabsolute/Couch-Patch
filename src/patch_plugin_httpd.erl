@@ -9,12 +9,18 @@ handle_req(#httpd{
   path_parts = [_DbName, _Patch, DocId]
 } = Req, Db) ->
   couch_httpd:validate_ctype(Req, "application/json"),
-  Body = couch_httpd:json_body_obj(Req),
-  Doc = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
+  {Obj} = couch_httpd:json_body_obj(Req),
+  PatchData = proplists:get_value(<<"ops">>, Obj),
 
+  Doc = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
+  {ok, ParsedPatch} = patch_plugin_json_path:parse(PatchData),
+  CDoc = couch_doc:to_json_obj(Doc, [{user_ctx, Req#httpd.user_ctx}]),
+  {ok, PatchedData} = patch_plugin_json_path:apply(ParsedPatch, CDoc),
+  {ok, NewRev} = couch_db:update_doc(Db, couch_doc:from_json_obj({PatchedData}), [], interactive_edit),
   couch_httpd:send_json(Req, {[
-    {<<"doc">>, couch_doc:to_json_obj(Doc,[{user_ctx, Req#httpd.user_ctx}])},
-    {<<"body">>, Body}
+    {<<"doc">>, CDoc},
+    {<<"patch_data">>, PatchData},
+    {<<"patch">>, {PatchedData}}
   ]});
 
 handle_req(Req, _Db) ->
