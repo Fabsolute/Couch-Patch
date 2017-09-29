@@ -1,6 +1,6 @@
 %% -*- mode: erlang -*-
-{application, ahmet_plugin, [
-    {description, "Ahmet CouchDB Plugin"},
+{application, patch_plugin, [
+    {description, "Patch CouchDB Plugin"},
     {vsn, "0.0.0"},
     {modules, []},
     {registered, []},

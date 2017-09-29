@@ -15,7 +15,7 @@ all: compile
 compile:
 	ERL_LIBS=$(shell couch-config --erl-libs-dir):$(ERL_LIBS) rebar compile
 
-dev:
+dev: compile
 	@ERL_LIBS=$(shell pwd) couchdb -i -a priv/default.d/*.ini
 
 plugin: compile
