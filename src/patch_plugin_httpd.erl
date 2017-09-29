@@ -13,7 +13,7 @@ handle_req(#httpd{
   Doc = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
 
   couch_httpd:send_json(Req, {[
-    {<<"doc">>, Doc},
+    {<<"doc">>, couch_doc:to_json_obj(Doc,[{user_ctx, Req#httpd.user_ctx}])},
     {<<"body">>, Body}
   ]});
 
