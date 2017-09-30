@@ -1,5 +1,5 @@
 # Customize here
-NAME=my_first_couchdb_plugin
+NAME=couch_http_patch
 VERSION=1.0.0
 # Stop customizing here
 
