@@ -7,14 +7,15 @@
 handle_req(#httpd{
   method = 'PATCH',
   path_parts = [_DbName, _Patch, DocId],
-  user_ctx = UserCTX
+  user_ctx = UserCtx
 } = Req, Db) ->
   couch_httpd:validate_ctype(Req, "application/json"),
+  ok = couch_db:check_is_admin(Db),
   {Body} = couch_httpd:json_body_obj(Req),
   Ops = proplists:get_value(<<"ops">>, Body),
 
   CouchDocument = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
-  Doc = couch_doc:to_json_obj(CouchDocument, [{user_ctx, UserCTX}]),
+  Doc = couch_doc:to_json_obj(CouchDocument, [{user_ctx, UserCtx}]),
   PatchedDocument = patch(Doc, Ops),
   NewCouchDoc = couch_doc:from_json_obj(PatchedDocument),
   Response = couch_db:update_doc(Db, NewCouchDoc, []),
