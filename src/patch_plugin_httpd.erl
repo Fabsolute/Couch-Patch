@@ -6,22 +6,24 @@
 
 handle_req(#httpd{
   method = 'PATCH',
-  path_parts = [_DbName, _Patch, DocId]
+  path_parts = [_DbName, _Patch, DocId],
+  user_ctx = UserCTX
 } = Req, Db) ->
   couch_httpd:validate_ctype(Req, "application/json"),
-  {Obj} = couch_httpd:json_body_obj(Req),
-  PatchData = proplists:get_value(<<"ops">>, Obj),
+  {Body} = couch_httpd:json_body_obj(Req),
+  Ops = proplists:get_value(<<"ops">>, Body),
 
-  Doc = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
-  {ok, ParsedPatch} = patch_plugin_json_path:parse(PatchData),
-  CDoc = couch_doc:to_json_obj(Doc, [{user_ctx, Req#httpd.user_ctx}]),
-  {ok, PatchedData} = patch_plugin_json_path:apply(ParsedPatch, CDoc),
-  {ok, NewRev} = couch_db:update_doc(Db, couch_doc:from_json_obj({PatchedData}), [], interactive_edit),
-  couch_httpd:send_json(Req, {[
-    {<<"doc">>, CDoc},
-    {<<"patch_data">>, PatchData},
-    {<<"patch">>, {PatchedData}}
-  ]});
+  CouchDocument = couch_httpd_db:couch_doc_open(Db, DocId, nil, [ejson_body]),
+  Doc = couch_doc:to_json_obj(CouchDocument, [{user_ctx, UserCTX}]),
+  PatchedDocument = patch(Doc, Ops),
+  NewCouchDoc = couch_doc:from_json_obj(PatchedDocument),
+  Response = couch_db:update_doc(Db, NewCouchDoc, []),
+  couch_httpd:send_json(Req, couch_httpd_db:update_doc_result_to_json(DocId, Response));
 
 handle_req(Req, _Db) ->
   couch_httpd:send_method_not_allowed(Req, "PATCH").
+
+patch(Doc, RawOps) ->
+  {ok, Ops} = patch_plugin:parse_ops(RawOps),
+  {ok, PatchedDoc} = patch_plugin:apply_patch(Ops, Doc),
+  PatchedDoc.
