@@ -84,7 +84,7 @@ remove(_Field, _Object) ->
 replace(FieldList, Value, Object) ->
   case remove(FieldList, Object) of
     {ok, NewObject} ->
-      add(FieldList, Value, NewObject, nothing);
+      add(FieldList, Value, NewObject, ignore_index);
     Other -> Other
   end.
 
